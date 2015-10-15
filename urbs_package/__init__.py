@@ -1,1 +1,1 @@
-__all__ = ['urbs_preprocessor', 'urbs_postprocessor', 'lp_model', 'comp_new']
+__all__ = ['urbs_preprocessor', 'urbs_postprocessor', 'lp_model', 'comp_new', 'pwlp_model']

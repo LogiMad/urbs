@@ -1,40 +1,7 @@
-import pandas as pd
 import os
-import urbs_configuration_set as conf
+import pandas as pd
 from datetime import datetime
-
-# region SCENARIOS
-def scenario_base(data):
-    """do nothing"""
-    return data
-
-def scenario_stock_prices(data):
-    """change stock commodity prices"""
-    co = data['commodity']
-    stock_commodities_only = (co.index.get_level_values('Type') == 'Stock')
-    co.loc[stock_commodities_only, 'price'] *= conf.stock_prices_multiplier
-    return data
-
-def scenario_co2_limit(data):
-    """change global CO2 limit"""
-    hacks = data['hacks']
-    hacks.loc['Global CO2 limit', 'Value'] *= conf.co2_limit_multiplier
-    return data
-
-def scenario_north_process_caps(data):
-    """change maximum installable capacity"""
-    pro = data['process']
-    pro.loc[('North', 'Hydro plant'), 'cap-up'] *= 0.5
-    pro.loc[('North', 'Biomass plant'), 'cap-up'] *= 0.25
-    return data
-
-def scenario_all_together(data):
-    """combine all other scenarios"""
-    data = scenario_stock_prices(data)
-    data = scenario_co2_limit(data)
-    data = scenario_north_process_caps(data)
-    return data
-# endregion
+from sympy import *
 
 def prepare_result_directory(result_name):
     """ create a time stamped directory within the result folder """
@@ -169,6 +136,31 @@ def load(filename):
         prob = pickle.load(file_handle)
     return prob
 
+def generate_pw_brk_pts(df, chk_col, eq_col, x_start, x_end, x_step, tolerance):
+    """Generates the linear piecewise break points out of equations in a dataframe and returns the updated dataframe
+    with appended columns of break points' range and domain values.
+    Args:
+        df: the dataframe where the curve equations are placed (e.g: 'process_commodity').
+        chk_col: name of column where the condition for making a piecewise equation is checked (i.e.: if -1, equation available, else constant value).
+        eq_col: name of column where the equations are located.
+        x_start: the domain lower bound of the normalized curve equation.
+        x_end: the domain upper bound of the normalized curve equation.
+        x_step: the step size of domain check points to find the break points taking the tolerance into account.
+        tolerance: uncertainty tolerance of the piecewise linearisation compared to non-linear function.
+
+    Returns:
+        df: the updated dataframe with two columns (i.e.: 'pw_domain' & 'pw_range') of list of domain values and dictionary of range values using domain values as keys.
+    """
+
+    df['pw_domain'] = None
+    df['pw_range'] = None
+    for index, row in df.iterrows():
+        if df.loc[index, chk_col] == -1:
+            pw_dom, pw_ran = pw_dmn_rng(df.loc[index, eq_col], x_start, x_end, x_step, tolerance)
+            df.set_value(index, 'pw_domain', pw_dom)
+            df.set_value(index, 'pw_range', pw_ran)
+    return df
+
 # region Helper functions
 def annuity_factor(n, i):
     """Annuity factor formula.
@@ -212,5 +204,57 @@ def split_columns(columns, sep='.'):
     """
     column_tuples = [tuple(col.split('.')) for col in columns]
     return pd.MultiIndex.from_tuples(column_tuples)
+
+def pw_dmn_rng(str_fn, x_start, x_end, x_step, tolerance):
+    """Deterimines the linear piecewised domain and range value of break points out of a given normalized curve equation.
+
+    Args:
+        str_fn: the curve normalised equation to be picewised in string format.
+        x_start: the domain lower bound of the normalized curve equation.
+        x_end: the domain upper bound of the normalized curve equation.
+        x_step: the step size of domain check points to find the break points taking the tolerance into account.
+        tolerance: uncertainty tolerance of the piecewise linearisation compared to non-linear function
+
+    Returns:
+        domain_pts: List of domain value of break points of piecewised curve equation.
+        range_pts: A dictionary of range value of break points of piecewised curve equation with domain values as keys.
+    """
+    x = Symbol('x')
+    # y = expand(sympify(str_fn))
+    y = expand(sympify(str_fn) * sympify('x'))
+    fn = lambdify(x, y)
+    yprime = diff(y, x)
+    slope = lambdify(x, yprime)
+
+    domain_pts = [x_start]
+    range_pts = [fn(x_start)]
+    x_value = x_start
+    step_divider = 1
+    while x_value < x_end:
+        y_act = fn(x_value)
+        y_lin = slope(domain_pts[-1]) * (x_value - domain_pts[-1]) + range_pts[-1]
+        if y_act == 0:
+            uncert = abs(y_lin-y_act)
+        else:
+            uncert = abs(y_lin-y_act)/y_act
+        if uncert > tolerance:
+            # set the current step as breakpoint and reset checking linear value with actual value
+            brk_pt = x_value-x_step/step_divider
+            # if the uncertainty reaches the tolerance in less than one step after the previous break point,
+            # steps would be shortened temporarily using a linear augmentative step divider
+            if brk_pt == domain_pts[-1]:
+                step_divider += 1
+                x_value = brk_pt + x_step/step_divider
+            else:
+                domain_pts.append(brk_pt)
+                range_pts.append(fn(brk_pt))
+                x_value -= x_step/step_divider
+                step_divider = 1
+        else:
+            x_value += x_step/step_divider
+    domain_pts.append(x_end)
+    range_pts.append(fn(x_end))
+    range_pts = dict(zip(domain_pts, range_pts))
+    return domain_pts, range_pts
 
 # endregion
