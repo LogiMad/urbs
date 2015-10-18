@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from random import random
 import urbs_preprocessor as pre
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
-import urbs_configuration_set as conf
+import urbs_user_interface as conf
 
 def report(instance, filename, commodities=None, sites=None):
     """Write result summary to a spreadsheet file

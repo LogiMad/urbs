@@ -1,4 +1,3 @@
-
 import coopr.pyomo as pyomo
 import math
 from datetime import datetime
