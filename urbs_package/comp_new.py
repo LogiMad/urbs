@@ -179,7 +179,7 @@ def get_esums_costs(instance, commodities=None, sites=None):
     """
     # get the data
     costs = post.get_constants(instance)[0]
-    esums = post.summaries_timeseries(instance, commodities, sites)[0]
+    esums = post.summarize_timeseries(instance, commodities, sites)[0]
     return costs, esums
 
 def comp_analyse(costs, esums):

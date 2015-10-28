@@ -801,4 +801,3 @@ def commodity_subset(com_tuples, type_name):
                if com_type == type_name)
 
 # endregion
-
