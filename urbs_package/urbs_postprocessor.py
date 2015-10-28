@@ -367,7 +367,7 @@ def get_entity(instance, name):
         results.columns = labels + [name]
         results.set_index(labels, inplace=True)
 
-    return resultsUs
+    return results
 
 def get_entities(instance, names):
     """ Return one DataFrame with entities in columns and a common index.
