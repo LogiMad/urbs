@@ -5,8 +5,8 @@ import matplotlib.ticker as tkr
 import pandas as pd
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 import urbs_user_interface as conf
-import urbs_preprocessor as pre
-import urbs_postprocessor as post
+import preprocessor as pre
+import postprocessor as post
 
 def compare_scenarios(comp_filename, load_scenario, scenarios, result_dir=None):
     """ Create report sheet and plots for given report spreadsheets.

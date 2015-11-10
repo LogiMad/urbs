@@ -146,7 +146,7 @@ def generate_pw_brk_pts(df, chk_col, eq_col, x_start, x_end, x_step, tolerance):
         x_start: the domain lower bound of the normalized curve equation.
         x_end: the domain upper bound of the normalized curve equation.
         x_step: the step size of domain check points to find the break points taking the tolerance into account.
-        tolerance: uncertainty tolerance of the piecewise linearisation compared to non-linear function.
+        tolerance: error tolerance of the piecewise linearisation compared to non-linear function.
 
     Returns:
         df: the updated dataframe with two columns (i.e.: 'pw_domain' & 'pw_range') of list of domain values and dictionary of range values using domain values as keys.
@@ -213,7 +213,7 @@ def pw_dmn_rng(str_fn, x_start, x_end, x_step, tolerance):
         x_start: the domain lower bound of the normalized curve equation.
         x_end: the domain upper bound of the normalized curve equation.
         x_step: the step size of domain check points to find the break points taking the tolerance into account.
-        tolerance: uncertainty tolerance of the piecewise linearisation compared to non-linear function
+        tolerance: error tolerance of the piecewise linear function compared to non-linear function
 
     Returns:
         domain_pts: List of domain value of break points of piecewised curve equation.
@@ -234,14 +234,14 @@ def pw_dmn_rng(str_fn, x_start, x_end, x_step, tolerance):
         y_act = fn(x_value)
         y_lin = slope(domain_pts[-1]) * (x_value - domain_pts[-1]) + range_pts[-1]
         if y_act == 0:
-            uncert = abs(y_lin-y_act)
+            error = abs(y_lin-y_act)
         else:
-            uncert = abs(y_lin-y_act)/y_act
-        if uncert > tolerance:
+            error = abs(y_lin-y_act)/abs(y_act)
+        if error > tolerance:
             # set the current step as breakpoint and reset checking linear value with actual value
             brk_pt = x_value-x_step/step_divider
-            # if the uncertainty reaches the tolerance in less than one step after the previous break point,
-            # steps would be shortened temporarily using a linear augmentative step divider
+            # if the error reaches the tolerance in less than one step after the previous break point,
+            # steps would be shortened temporarily using a linear incremental step divider
             if brk_pt == domain_pts[-1]:
                 step_divider += 1
                 x_value = brk_pt + x_step/step_divider

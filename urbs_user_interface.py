@@ -1,7 +1,7 @@
 # URBS User Interface
 input_file = 'mimo-example_new.xlsx'  # e.g.: 'mimo-example.xlsx', 'mimo-example_new.xlsx'
 
-opt_model_name = 'urbs_package.lp_model'  # e.g.: 'urbs_package.lp_model', 'urbs_package.pwlp_model'
+opt_model_name = 'urbs.lp_model'  # e.g.: 'urbs.lp_model', 'urbs.pwlp_model'
 
 optimization_solver = 'glpk'  # e.g.: cplex, glpk, gurobi, ...
 
@@ -55,7 +55,7 @@ timesteps = range(offset, offset+length+1)
 # region Scenarios Comparison
 # result's source for scenarios comparison
 # (True: load the scenario results from urbs model instance. False: retrieve the results from recent spreadsheets.)
-load_scenario = True  #  False
+load_scenario = True  # False
 
 # specify comparison result filename
 comp_filename = 'comparison'
@@ -103,5 +103,5 @@ tolerance = 0.5  # tolerance: uncertainty tolerance of the piecewise linearisati
 # endregion
 
 if __name__ == '__main__':
-    import urbs_package.urbs_runme as runme
-    runme.run_compare_scenarios(input_file, opt_model_name, timesteps, scenarios, comp_filename, periods)
+    import urbs.urbs_main as main
+    main.run_compare_scenarios(input_file, opt_model_name, timesteps, scenarios, comp_filename, periods)

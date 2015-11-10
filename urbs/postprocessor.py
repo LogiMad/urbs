@@ -5,7 +5,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.ticker as tkr
 import matplotlib.pyplot as plt
 from random import random
-import urbs_preprocessor as pre
+import preprocessor as pre
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 import urbs_user_interface as conf
 

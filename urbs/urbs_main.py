@@ -2,8 +2,8 @@ import os, sys
 import time
 from coopr.opt.base import SolverFactory
 import pandas as pd
-import urbs_preprocessor as pre
-import urbs_postprocessor as post
+import preprocessor as pre
+import postprocessor as post
 from importlib import import_module
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 import urbs_user_interface as conf

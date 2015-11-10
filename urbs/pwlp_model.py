@@ -321,19 +321,19 @@ def create_model(data, timesteps=None, dt=1):
     m.res_process_ramp_up = pyomo.Constraint(
         m.tm, m.pro_output_tuples,
         rule=res_process_ramp_up_rule,
-        doc='process output increase  <= ramp-up rate * time step duration')
+        doc='process output increase  <= relative ramp-up rate * time step duration')
     m.res_process_ramp_down = pyomo.Constraint(
         m.tm, m.pro_output_tuples,
         rule=res_process_ramp_down_rule,
-        doc='process output decrease  <= ramp-down rate * time step duration')
+        doc='process output decrease  <= relative ramp-down rate * time step duration')
     m.def_process_output_pw = pyomo.Piecewise(
         m.tm, m.pro_output_tuples,
         m.e_pro_out, m.cf_pro,  # range and domain variables
         pw_pts=m.pw_dmn_out[m.pro, m.com],
         pw_constr_type='EQ',
-        pw_repn='DCC',
+        pw_repn='SOS2',
         f_rule=def_process_output_pw_rule,
-        doc='process output = f(capacity factor), "f" is a linear piecewise function')
+        doc='process throughput = f(capacity factor), "f" is a linear piecewise function')
     # endregion
 
     # region transmission
@@ -552,10 +552,15 @@ def def_intermittent_supply_rule(m, tm, sit, pro, coin):
     else:
         return pyomo.Constraint.Skip
 
+# def def_process_capacity_factor_rule(m, tm, sit, pro):
+#     """process capacity factor = process throughput / process capacity"""
+#     return (m.cf_pro[tm, sit, pro] ==
+#             m.tau_pro[tm, sit, pro] / m.cap_pro[sit, pro])
+
 def def_process_capacity_factor_rule(m, tm, sit, pro):
-    """process capacity factor = process throughput / process capacity"""
+    """process capacity factor = process output power / process capacity"""
     return (m.cf_pro[tm, sit, pro] ==
-            m.tau_pro[tm, sit, pro] / m.cap_pro[sit, pro])
+            m.e_pro_out[tm, sit, pro, co] / m.cap_pro[sit, pro])
 
 def res_process_throughput_by_capacity_rule(m, tm, sit, pro):
     """process throughput <= process capacity"""
@@ -568,7 +573,7 @@ def res_process_capacity_rule(m, sit, pro):
             m.process.loc[sit, pro]['cap-up'])
 
 def res_process_ramp_up_rule(m, tm, sit, pro, co):
-    """process output increase  <= process capacity * ramp-up rate * time step duration"""
+    """process output increase  <= process capacity * relative ramp-up rate * time step duration"""
     if isnull(m.process.loc[sit, pro]['ramp-up']):
         return pyomo.Constraint.Skip
     elif tm-1 in m.e_pro_out:
@@ -577,14 +582,13 @@ def res_process_ramp_up_rule(m, tm, sit, pro, co):
     else:
         return pyomo.Constraint.Skip
 
-
 def res_process_ramp_down_rule(m, tm, sit, pro, co):
-    """process output decrease  <= ramp-down rate * time step duration"""
+    """process output decrease  <= process capacity * relative ramp-down rate * time step duration"""
     if isnull(m.process.loc[sit, pro]['ramp-down']):
         return pyomo.Constraint.Skip
     elif tm-1 in m.e_pro_out:
         return (m.e_pro_out[tm-1, sit, pro, co] - m.e_pro_out[tm, sit, pro, co] <=
-                m.process.loc[sit, pro]['ramp-down'] * m.dt)
+                m.cap_pro[sit, pro] * m.process.loc[sit, pro]['ramp-down'] * 60 * m.dt)
     else:
         return pyomo.Constraint.Skip
 
@@ -593,9 +597,9 @@ def def_process_output_pw_rule(m, sit, pro, dmn_pts):
         as input of the linear Piecewise function dictionary.
     """
     if isnull(m.process_commodity.loc[sit, pro]['pw_range']):
-        return m.process_commodity.loc[sit, pro]['pw_range'][dmn_pts]
-    else:
         return pyomo.Constraint.Skip
+    else:
+        return m.process_commodity.loc[sit, pro]['pw_range'][dmn_pts]
 
 
 # endregion
