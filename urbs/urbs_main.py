@@ -78,7 +78,7 @@ def run_compare_scenarios(input_file, opt_model_name, timesteps, scenarios, comp
     excel_begin_time = time.clock()
     data = pre.read_excel(input_file)
     if opt_model_name == 'urbs_package.pwlp_model':
-        data['process_commodity'] = pre.generate_pw_brk_pts(data['process_commodity'], 'ratio', 'charac-eq',
+        data['process_commodity'] = pre.generate_pw_brk_pts(data['process_commodity'], 'ratio', 'charac-fn',
                                                             conf.x_start, conf.x_end, conf.x_step, conf.tolerance)
     excel_end_time = time.clock()
     print'The data was loaded in', (excel_end_time - excel_begin_time), 'secs!'
@@ -94,21 +94,11 @@ def run_compare_scenarios(input_file, opt_model_name, timesteps, scenarios, comp
         esums.append(esum)
 
     comp_begin_time = time.clock()
-    scenario_names = post.derive_scenario_names(scenarios)
-    # merge everything into one DataFrame each
-    costs = pd.concat(costs, axis=1, keys=scenario_names)
-    esums = pd.concat(esums, axis=1, keys=scenario_names)
-
-    # specify comparison result filename
-    output_filename = os.path.join(result_dir, comp_filename)
-    # drop redundant 'costs' column label make index name nicer for plot
-    # sort/transpose frame convert EUR/a to 1e9 EUR/a
-    costs, esums = post.comp_analyse(costs, esums)
-    # make plots and reports out of compared scenarios
-    post.comp_plot(costs, esums, output_filename)
-    post.comp_report(costs, esums, output_filename)
+    post.compare_scenarios(comp_filename, scenarios, costs, esums, load_scenario=None, result_dir=None)
     comp_end_time = time.clock()
     print 'Comparison report files were generated in', (comp_end_time - comp_begin_time), 'secs!'
+    print 'THE TOTAL RUNTIME WAS', (comp_end_time - excel_begin_time), 'SECS!'
+
 
 if __name__ == '__main__':
     run_compare_scenarios(conf.input_file, conf.opt_model_name, conf.timesteps, conf.scenarios, conf.comp_filename, conf.periods)

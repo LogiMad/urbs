@@ -96,10 +96,10 @@ my_colors = {
 # endregion
 
 # region generate_pw_brk_pts function settings:
-x_start = 0.0  # x_start: the domain lower bound of the normalized curve equation.x_start = 0.0
-x_end = 1.0  # x_end: the domain upper bound of the normalized curve equation.
+x_start = 0.0  # x_start: the domain lower bound of the normalized characteristic function.x_start = 0.0
+x_end = 1.0  # x_end: the domain upper bound of the normalized characteristic function.
 x_step = 0.01  # x_step: the step size of domain check points to find the break points taking the tolerance into account.
-tolerance = 0.5  # tolerance: uncertainty tolerance of the piecewise linearisation compared to non-linear function.
+tolerance = 0.5  # tolerance: uncertainty tolerance of the piecewise linearization compared to characteristic function.
 # endregion
 
 if __name__ == '__main__':

@@ -136,27 +136,29 @@ def load(filename):
         prob = pickle.load(file_handle)
     return prob
 
-def generate_pw_brk_pts(df, chk_col, eq_col, x_start, x_end, x_step, tolerance):
+def generate_pw_brk_pts(df, chk_col, fn_col, x_start, x_end, x_step, tolerance):
     """Generates the linear piecewise break points out of equations in a dataframe and returns the updated dataframe
-    with appended columns of break points' range and domain values.
+    with appended columns of break points' range lists and domain values dictionaries.
     Args:
-        df: the dataframe where the curve equations are placed (e.g: 'process_commodity').
-        chk_col: name of column where the condition for making a piecewise equation is checked (i.e.: if -1, equation available, else constant value).
-        eq_col: name of column where the equations are located.
-        x_start: the domain lower bound of the normalized curve equation.
-        x_end: the domain upper bound of the normalized curve equation.
+        df: the dataframe where the characteristic functions are placed (e.g: 'process_commodity').
+        chk_col: name of column where the condition for making a piecewise function is checked
+                (i.e.: if -1, function expression available, else constant value).
+        fn_col: name of column where the functions expression are located.
+        x_start: the domain lower bound of the normalized characteristic function.
+        x_end: the domain upper bound of the normalized characteristic function.
         x_step: the step size of domain check points to find the break points taking the tolerance into account.
-        tolerance: error tolerance of the piecewise linearisation compared to non-linear function.
+        tolerance: error tolerance of the piecewise linearization compared to characteristic function.
 
     Returns:
-        df: the updated dataframe with two columns (i.e.: 'pw_domain' & 'pw_range') of list of domain values and dictionary of range values using domain values as keys.
+        df: the updated dataframe with two columns (i.e.: 'pw_domain' & 'pw_range') of list of domain values
+            and dictionary of range values using domain values as keys.
     """
 
     df['pw_domain'] = None
     df['pw_range'] = None
     for index, row in df.iterrows():
         if df.loc[index, chk_col] == -1:
-            pw_dom, pw_ran = pw_dmn_rng(df.loc[index, eq_col], x_start, x_end, x_step, tolerance)
+            pw_dom, pw_ran = pw_dmn_rng(df.loc[index, fn_col], x_start, x_end, x_step, tolerance)
             df.set_value(index, 'pw_domain', pw_dom)
             df.set_value(index, 'pw_range', pw_ran)
     return df
@@ -205,23 +207,23 @@ def split_columns(columns, sep='.'):
     column_tuples = [tuple(col.split('.')) for col in columns]
     return pd.MultiIndex.from_tuples(column_tuples)
 
-def pw_dmn_rng(str_fn, x_start, x_end, x_step, tolerance):
+def pw_dmn_rng(charac_fn, x_start, x_end, x_step, tolerance):
     """Deterimines the linear piecewised domain and range value of break points out of a given normalized curve equation.
 
     Args:
-        str_fn: the curve normalised equation to be picewised in string format.
-        x_start: the domain lower bound of the normalized curve equation.
-        x_end: the domain upper bound of the normalized curve equation.
+        charac_fn: the string typed normalized characteristic function expression to be piecewised.
+        x_start: the domain lower bound of the normalized characteristic function.
+        x_end: the domain upper bound of the normalized characteristic function.
         x_step: the step size of domain check points to find the break points taking the tolerance into account.
-        tolerance: error tolerance of the piecewise linear function compared to non-linear function
+        tolerance: error tolerance of the piecewise linearization compared to characteristic function
 
     Returns:
-        domain_pts: List of domain value of break points of piecewised curve equation.
-        range_pts: A dictionary of range value of break points of piecewised curve equation with domain values as keys.
+        domain_pts: List of domain value of break points of piecewised characteristic function.
+        range_pts: A dictionary of range value of break points of piecewised characteristic function with domain values as keys.
     """
     x = Symbol('x')
-    # y = expand(sympify(str_fn))
-    y = expand(sympify(str_fn) * sympify('x'))
+    # y = expand(sympify(charac_fn))
+    y = expand(sympify(charac_fn) * sympify('x'))
     fn = lambdify(x, y)
     yprime = diff(y, x)
     slope = lambdify(x, yprime)
