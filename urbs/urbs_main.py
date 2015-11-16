@@ -1,5 +1,6 @@
 import os, sys
 import time
+import coopr.environ
 from coopr.opt.base import SolverFactory
 import pandas as pd
 import preprocessor as pre
@@ -7,6 +8,38 @@ import postprocessor as post
 from importlib import import_module
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 import urbs_user_interface as conf
+
+def run_compare_scenarios(input_file, opt_model_name, timesteps, scenarios, comp_filename, periods):
+    result_name = os.path.splitext(input_file)[0]  # cut away file extension
+    result_dir = pre.prepare_result_directory(result_name)  # name + time stamp
+
+    for country, color in conf.my_colors.iteritems():
+        conf.COLORS[country] = color
+
+    # Read Excel input file and prepare URBS input dict.
+    excel_begin_time = time.clock()
+    data = pre.read_excel(input_file)
+    if opt_model_name == 'urbs_package.pwlp_model':
+        data['process_commodity'] = pre.generate_pw_brk_pts(data['process_commodity'], 'ratio', 'charac-fn',
+                                                            conf.x_start, conf.x_end, conf.x_step, conf.tolerance)
+    excel_end_time = time.clock()
+    print'The data was loaded in', (excel_end_time - excel_begin_time), 'secs!'
+
+    costs = []
+    esums = []
+    for scenario in scenarios:
+        prob = run_scenario(data, opt_model_name, timesteps, scenario,
+                            result_dir, plot_periods=periods)
+
+        cost, esum = post.get_esums_costs(prob, prob.com_demand, prob.sit)
+        costs.append(cost)
+        esums.append(esum)
+
+    comp_begin_time = time.clock()
+    post.compare_scenarios(comp_filename, scenarios, costs, esums, load_scenario=None, result_dir=None)
+    comp_end_time = time.clock()
+    print 'Comparison report files were generated in', (comp_end_time - comp_begin_time), 'secs!'
+    print 'THE TOTAL RUNTIME WAS', (comp_end_time - excel_begin_time), 'SECS!'
 
 def run_scenario(data, opt_model_name, timesteps, scenario, result_dir, plot_periods={}):
     """ run an urbs model for given input, time steps and scenario
@@ -57,7 +90,7 @@ def run_scenario(data, opt_model_name, timesteps, scenario, result_dir, plot_per
         os.path.join(result_dir, '{}-{}.pgz').format(sce, now))
 
     post.result_figures(
-        prob, 
+        prob,
         os.path.join(result_dir, '{}-{}'.format(sce, now)),
         plot_title_prefix=sce.replace('_', ' ').title(),
         periods=plot_periods)
@@ -66,39 +99,6 @@ def run_scenario(data, opt_model_name, timesteps, scenario, result_dir, plot_per
     print sce, 'runtime was', (sce_post_time - sce_begin_time), 'secs!'
     print
     return prob
-
-def run_compare_scenarios(input_file, opt_model_name, timesteps, scenarios, comp_filename, periods):
-    result_name = os.path.splitext(input_file)[0]  # cut away file extension
-    result_dir = pre.prepare_result_directory(result_name)  # name + time stamp
-
-    for country, color in conf.my_colors.iteritems():
-        conf.COLORS[country] = color
-
-    # Read Excel input file and prepare URBS input dict.
-    excel_begin_time = time.clock()
-    data = pre.read_excel(input_file)
-    if opt_model_name == 'urbs_package.pwlp_model':
-        data['process_commodity'] = pre.generate_pw_brk_pts(data['process_commodity'], 'ratio', 'charac-fn',
-                                                            conf.x_start, conf.x_end, conf.x_step, conf.tolerance)
-    excel_end_time = time.clock()
-    print'The data was loaded in', (excel_end_time - excel_begin_time), 'secs!'
-
-    costs = []
-    esums = []
-    for scenario in scenarios:
-        prob = run_scenario(data, opt_model_name, timesteps, scenario,
-                            result_dir, plot_periods=periods)
-
-        cost, esum = post.get_esums_costs(prob, prob.com_demand, prob.sit)
-        costs.append(cost)
-        esums.append(esum)
-
-    comp_begin_time = time.clock()
-    post.compare_scenarios(comp_filename, scenarios, costs, esums, load_scenario=None, result_dir=None)
-    comp_end_time = time.clock()
-    print 'Comparison report files were generated in', (comp_end_time - comp_begin_time), 'secs!'
-    print 'THE TOTAL RUNTIME WAS', (comp_end_time - excel_begin_time), 'SECS!'
-
 
 if __name__ == '__main__':
     run_compare_scenarios(conf.input_file, conf.opt_model_name, conf.timesteps, conf.scenarios, conf.comp_filename, conf.periods)

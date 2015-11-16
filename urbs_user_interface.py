@@ -1,5 +1,5 @@
 # URBS User Interface
-input_file = 'mimo-example_new.xlsx'  # e.g.: 'mimo-example.xlsx', 'mimo-example_new.xlsx'
+input_file = 'mimo-example.xlsx'  # e.g.: 'mimo-example.xlsx', 'mimo-example_new.xlsx'
 
 opt_model_name = 'urbs.lp_model'  # e.g.: 'urbs.lp_model', 'urbs.pwlp_model'
 
